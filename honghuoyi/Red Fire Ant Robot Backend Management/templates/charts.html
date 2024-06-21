@@ -1,0 +1,39 @@
+{% extends "./common/layouts.html" %}
+{%block title %}图表化展示{% end %}
+{% block content %}
+<!-- .wrap>(.head>.title+button)+.body>(.item>.device+.chart)*4 -->
+<div class="wrapper wrapper-content">
+<div class="wrap">
+    <div class="head">
+        <div class="title">
+            一号大棚
+        </div>
+        <button type="button" class="btn btn-w-m btn-warning"><i class="fa 
+        fa-bullhorn"></i>  寻找设备</button>
+    </div>
+        <div class="item">
+            <div class="device">气象监测仪</div>
+            <div class="chart" id="1"></div>
+        </div>
+        <div class="item">
+            <div class="device">气象监测仪</div>
+            <div class="chart" id="2"></div>
+        </div>
+        <div class="item">
+            <div class="device">土壤监测仪</div>
+            <div class="chart" id="3"></div>
+        </div>
+        <div class="item">
+            <div class="device">土壤监测仪</div>
+            <div class="chart" id="4"></div>
+        </div>
+</div>
+</div>
+{% end %}
+{% block css %}
+<link href="{{static_url('CSS/charts.css')}}" rel="stylesheet">
+{% end %}
+{% block js %}
+<script src="{{static_url('JS/stat/echarts.min.js')}}"></script>
+<script type="text/javascript" charset="UTF-8" src="{{static_url('JS/chart.js') }}"></script>
+{% end %}

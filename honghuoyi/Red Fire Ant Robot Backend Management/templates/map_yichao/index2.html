@@ -1,0 +1,187 @@
+{% extends "../common/layouts.html" %}
+{%block title %}红火蚁小车监控系统{% end %}
+{% block content %}
+<script src="https://webapi.amap.com/maps?v=2.0&key=6c889de4ee1c73ea291466419487e294"></script>
+<style>
+    /* 关于蚁巢信息弹窗的css如下 */
+    .custom-info-window img {
+        height: 200px;
+        display: block;
+        margin: 10px 0;
+    }
+
+
+    .toggleBtn {
+        display: inline-block;
+        padding: 3px 5px;
+        color: #007BFF;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+        border: 1px solid #007BFF;
+    }
+
+    .toggleBtn:hover {
+        color: white;
+        background-color: #007BFF;
+    }
+
+    .input-item {
+        display: inline-block;
+        font-size: large;
+        font-weight: 500;
+        color: #000;
+    }
+
+    .window-content {
+        font-size: large;
+        font-weight: 500;
+        color: #000;
+    }
+
+    .content-window-card {
+        position: relative;
+        width: 20rem;
+        padding: 0.75rem 0 0 1.25rem;
+        box-shadow: none;
+        bottom: 0;
+        left: 0;
+    }
+
+    .content-window-card p {
+        height: 2rem;
+    }
+
+</style>
+<div class="wrapper wrapper-content">
+    <button class="btn" id="fitall">自适应所有标记</button>
+    <div id="container"></div>
+    <div class="input-card">
+        
+    </div>
+</div>
+{% end %}
+{% block css %}
+<link href="{{static_url('CSS/map/index.css')}}" rel="stylesheet">
+{% end %}
+{% block js %}
+<script type="text/javascript">
+    window._AMapSecurityConfig = {
+        securityJsCode: "82da1cc5467a95e168c358757d4c6ef5",
+    };
+</script>
+<script type="text/javascript"
+    src="https://webapi.amap.com/maps?v=2.0&key=6c889de4ee1c73ea291466419487e294&plugin=AMap.Geocoder"></script>
+<script>
+    // 初始化地图实例
+    var map = new AMap.Map('container', {
+        zoom: 7,
+        center: [113.378688, 22.973147]
+    });
+    //页面加载完就发送请求获取数据
+    window.onload = async function () {
+        try {
+             //根据覆盖物的范围显示地图
+            document.querySelector("#fitall").onclick = function () {
+                map.setFitView();
+            }
+            //构建蚁巢数据
+            const responseData2 = await fetchCarIds('/map_yichao/api_yicaho'); //蚁巢数据
+            console.log('responseData2:', responseData2);
+            points = responseData2['yichao']
+            points.forEach(function (point) {
+                var marker = new AMap.Marker({
+                    position: [point.longitude, point.latitude],
+
+                    // 图标实际大小
+                    map: map
+                });
+
+                marker.on('click', function () {
+                    var content = '<div class="custom-info-window">' +
+                        '<p>日期: ' + point.date + '</p>' +
+                        '<p>经纬度: ' + point.latitude + ', ' + point.longitude + '</p>' +
+                        '<p>是否消杀: ' + (point.is_sanitized ? '是' : '否') + '</p>' +
+                        '<img src="data:image/jpeg;base64,' + point.image + '" alt="image" />' +
+                        '</div>';
+
+                    var infoWindow = new AMap.InfoWindow({
+                        content: content,
+                        offset: new AMap.Pixel(0, -30)
+                    });
+                    infoWindow.open(map, marker.getPosition());
+                    window.closeInfoWindow = function () {
+                        infoWindow.close();
+                    };
+                });
+
+                marker.show()
+            });
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
+
+    // 异步获取数据的函数
+    async function fetchCarIds(url) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        console.log("xhr.responseText:", xhr.responseText)
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error(xhr.statusText));
+                    }
+                }
+            };
+            xhr.onerror = function () {
+                reject(new Error(xhr.statusText));
+            };
+            xhr.send();
+        });
+    }
+
+    //初始化Geocoder对象
+    var geocoder = new AMap.Geocoder({
+        city: "010", //城市设为北京，默认：“全国”
+        //范围，默认：500
+    });
+
+
+    //计算选定区域中红火蚁数量的函数!!!!
+    function countInArea(coordinates, area) { //area 传入选择的区域名字
+        return new Promise(function (resolve, reject) {
+            var AreaCount = 0;
+            var countProcessed = 0;
+            // 循环遍历坐标数组
+            coordinates.forEach(function (coord) {
+                // 逆地理编码获取地址信息
+                geocoder.getAddress(coord, function (status, result) {
+                    countProcessed++;
+                    if (status === 'complete' && result.info === 'OK') {
+                        // 获取行政区划信息
+                        var district = result.regeocode.formattedAddress;
+                        console.log('result')
+                        console.log(result)
+                        // 判断是否在番禺区
+                        if (district.indexOf(`${area}`) !== -1) {
+                            console.log('yes')
+                            AreaCount++;
+                        }
+                    }
+                    // 检查是否所有逆地理编码操作都已完成
+                    if (countProcessed === coordinates.length) {
+                        resolve(AreaCount);
+                    }
+                });
+            });
+        });
+    }
+
+
+</script>
+{% end %}
